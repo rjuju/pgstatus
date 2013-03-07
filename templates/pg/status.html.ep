@@ -1,0 +1,64 @@
+% layout 'default';
+% title 'State of server';
+
+<div class="navbar navbar-fixed-top navbar-inverse">
+  <div class="navbar-inner">
+  <ul class="nav">
+    <li><%= link_to pg_welcome => begin %>Home<% end %></li>
+    <li class="divider-vertical"></li>
+    <li onClick="displaySettings()"><a href="#">Options</a></li>
+    <li><%= link_to pg_logout => begin %>Forget conninfo<% end %></li>
+   </ul>
+</div></div>
+
+<div id="settings" class="well"><b>Settings<button class="close" onclick="displaySettings()">&times;</button></b><br />
+  <input type ="checkbox" name="toggle_refresh" onclick="toggleRefresh()"> Auto refresh<br />
+  <input type ="checkbox" name="show_idle" onclick="toggleSetting('idle')"
+<% if (session 'prm_idle') { %>
+  checked
+<% } %>
+   > Show idle connections<br />
+  <input type ="checkbox" name="show_idle_transaction" onclick="toggleSetting('idle_transaction')" 
+<% if (session 'prm_idle_transaction') { %>
+  checked
+<% } %>
+  > Show idle in transaction connections<br />
+  <input type ="checkbox" name="show_active" onclick="toggleSetting('active')"
+<% if (session 'prm_active') { %>
+  checked
+<% } %>
+  > Show active connections<br />
+  <input type ="checkbox" name="show_waiting" onclick="toggleSetting('waiting')"
+<% if (session 'prm_waiting') { %>
+  checked
+<% } %>
+  > Show blocked connections<br />
+</div>
+
+<div class="well">
+<img class="clickable" onClick="refreshStatus()" src="/css/images/refresh.png" width="20px" height="20px" />
+username: <span class="label label-inverse"><%= session 'pg_username' %></span> - Port: <span class="label label-inverse"><%= session 'pg_port' %></span> - Database: <span class="label label-inverse"><%= session 'pg_database' %></span> - Version: <span class="label label-inverse"><%= session 'pg_version' %></span>
+&nbsp; Idle query: <span id="count_idle" class="badge"></span>
+&nbsp; Idle in transaction query: <span id="count_idle_transaction" class="badge"></span>
+&nbsp; Active query: <span id="count_active" class="badge badge-success"></span>
+&nbsp; Blocked query: <span id="count_waiting" class="badge badge-important"></span>
+&nbsp; Other query: <span id="count_other" class="badge badge-info"></span>
+&nbsp; Total: <span id="count" class="badge badge-inverse"></span>
+</div>
+
+<div class="box-content">
+<table id="activity" class="table table-hover table-striped">
+  <thead>
+    <tr>
+    <th>PID</th>
+    <th>database</th>
+    <th>username</th>
+    <th>state</th>
+    <th>query</th>
+    <th>blocked</th>
+    </tr>
+  </thead>
+  <tbody>
+  </tbody>
+</table>
+</div>

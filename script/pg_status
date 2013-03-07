@@ -1,0 +1,22 @@
+#!/usr/bin/env perl
+
+use strict;
+use warnings;
+
+use FindBin;
+use lib "$FindBin::Bin/../lib";
+use lib "$FindBin::Bin/lib";
+
+#Check if mojolicious is installed
+eval 'use Mojolicious::Commands';
+die <<EOF if $@;
+It look like you don't have mojolicious framework installed.
+Please visit http://mojolicio.us to install it.
+
+EOF
+
+$ENV{MOJO_APP} ||= 'PgStatus';
+
+# Start commands for application
+require Mojolicious::Commands;
+Mojolicious::Commands->start;

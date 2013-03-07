@@ -1,0 +1,39 @@
+% layout 'welcome';
+% title 'Homepage';
+
+  <div class="container">
+    <div class="row">
+      <div class="span8">
+        <h2>Welcome to PgStatus 1.0</h2>
+        <b><u>Usage</u> :</b><br /><br />
+        <ul>
+          <li>Use Fill connection info. If needed, environnement var will be used ($PGUSER...)</li>
+          <li>
+            Main window show current activity. If the user specified for connection has enough permissions, you can
+            <ul>
+              <li> <span class="badge badge-warning"><b>X</b></span> cancel backend
+              <li> <span class="badge badge-important"><b>X</b></span> terminate backend (if pg > 8.3)
+            </ul>
+         </li>
+		 <li>Click on a column title to sort the table</li>
+         <li>Click on a query to open detail.</li>
+        <li>On a query detail, you can again click on a query to open it's detail.</li>
+        <li>Click on "option" to filter what queries to display.</li>
+        <li>Click on "forget conninfo" to use different connection parameters.</li>
+      </ul>
+      </div>
+
+    <%= form_for pg_status => (method => 'POST') => begin %>
+    <fieldset>
+      <legend>Login</legend>
+      <%= text_field 'username', type => 'text', class => 'input-block-level', id => 'username', placeholder => 'username' %>
+      <%= text_field 'host', type => 'text', class => 'input-block-level', id => 'host', placeholder => 'host' %>
+      <%= text_field 'port', type => 'text', class => 'input-block-level', id => 'port', placeholder => 'port' %>
+      <%= text_field 'database', type => 'text', class => 'input-block-level', id => 'database', placeholder => 'database' %>
+      <%= password_field 'password', type => 'password', class => 'input-block-level', id => 'password', placeholder => 'password' %>
+      <%= submit_button 'Connect', name => 'connect', class => 'btn btn-primary' %>
+    </fieldset>
+    <% end %>
+  </div>
+
+</div>

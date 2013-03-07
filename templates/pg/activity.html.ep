@@ -1,0 +1,31 @@
+% layout 'div';
+% my @queries = @{stash 'queries'};
+
+<% if (scalar(@queries)) { %>
+  <% foreach my $q (@queries) { %>
+  <%     my %line = %{$q}; %>
+  <tr>
+	<td><%= $line{pid} %>
+      <span class="badge badge-warning clickable" alt="Cancel backend" onClick="cancelBackend(<%= $line{pid} %>)">X</span>
+<% if ((session 'pg_version') > 83){ %>
+      <span class="badge badge-important clickable" alt="Terminate backend" onClick="terminateBackend(<%= $line{pid} %>)">X</span>
+<% } %>
+	</td>
+	<td><%= $line{datname} %></td>
+	<td><%= $line{usename} %></td>
+	<td><%= $line{state} %></td>
+	<td class="clickable" onclick="addQuery('<%= $line{datname} %>',<%= $line{pid} %>)"><%= $line{query} %></td>
+	<td>
+	<% if ($line{waiting} eq "true") { %>
+	  <font color="red">
+	<% } %>
+	  <%= $line{waiting} %>
+	<% if ($line{waiting} eq "true") { %>
+	  </font>
+	<% } %>
+	</td>
+  </tr>
+  <% } %>
+<% } else { %>
+<p>No activity found.</p>
+<% } %>

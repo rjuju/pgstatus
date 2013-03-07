@@ -1,0 +1,17 @@
+#settings {
+  width: 400px;
+  position: absolute;
+  left: 250px;
+  top: 140px;
+  border-style:dotted;
+  border-width:2px;
+}
+
+.clickable {
+  cursor: pointer;
+}
+
+.content {
+  font-size: 14px;
+  font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;
+}
