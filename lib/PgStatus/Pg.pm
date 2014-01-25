@@ -60,7 +60,7 @@ sub status {
     $version = $sql->fetchrow();
     $sql->finish();
     $dbh->disconnect();
-    
+
     #Connections settings
     $self->session('pg_username' => $param->{username});
     $self->session('pg_host' => $param->{host});
@@ -73,7 +73,7 @@ sub status {
     $self->session('prm_idle_transaction' => 1);
     $self->session('prm_active' => 1);
     $self->session('prm_waiting' => 1);
-    
+
   } else{
     #Connection already ok, get by session
     $version = $self->session('pg_version');
@@ -108,7 +108,7 @@ sub activity {
   }
   $sql->execute();
   my $add;
-  
+
   while (my ($p, $d, $u, $s, $q, $w) = $sql->fetchrow()) {
     $add = 0;
     switch ($s){
@@ -182,7 +182,7 @@ sub count {
     count_waiting => $count_waiting,
     count_other => $count_other
   });
-  
+
 }
 
 sub query {
@@ -191,7 +191,7 @@ sub query {
   my $pid = $self->param('pid');
   my $field_pid = (($self->session('pg_version') > 91)?"pid":"procpid");
   my $field_query = (($self->session('pg_version') > 91)?"query":"current_query");
-  
+
   my $dbh = DBI->connect(conninfo($dbname,$self->session('pg_host'),$self->session('pg_port')), $self->session('pg_username'), $self->session('pg_password'));
   if (! $dbh){
     #Could not connect to specific database
@@ -202,7 +202,7 @@ sub query {
   $sql->execute();
   my $query = $sql->fetchrow();
   $self->stash(query => $query);
-  
+
   $tmp = qq{SELECT quote_ident(n.nspname) || '.' || quote_ident(c.relname) as relname,
     quote_ident(psa.datname) as datname,l.locktype, l.page,l.tuple,l.mode,l.granted::text,l2.pid as blocking_pid,psa2.}
     .(($self->session('pg_version') > 91)?"query":"current_query")." AS blocking_query\n"

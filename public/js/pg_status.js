@@ -19,7 +19,7 @@ function addQuery(database,pid){
 function refreshStatus(){
   //$('#activity').fadeOut("slow").load('/pg_activity').fadeIn("slow");
   $('#activity tbody').load('/pg_activity');
-  $("#activity").trigger("update"); 
+  $("#activity").trigger("update");
   refreshCount();
 }
 
@@ -43,7 +43,7 @@ function toggleSetting(name){
   $.ajax({
     url: "/pg_toggle/"+name,
     type: "post",
-    async: false}); 
+    async: false});
 	refreshStatus();
 };
 
@@ -59,7 +59,7 @@ function cancelBackend(pid){
   $.ajax({
     url: "/pg_backend/"+pid+"/cancel",
     type: "post",
-    async: false}); 
+    async: false});
 	refreshStatus();
 };
 
@@ -67,7 +67,7 @@ function terminateBackend(pid){
   $.ajax({
     url: "/pg_backend/"+pid+"/terminate",
     type: "post",
-    async: false}); 
+    async: false});
 	refreshStatus();
 };
 

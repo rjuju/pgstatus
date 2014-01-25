@@ -15,7 +15,7 @@
     <script type="text/javascript" src="<%= url_for '/' %>js/pg_status.js"></script>
   </head>
   <body style="padding-top: 60px;">
-      
+
     <div class="container">
       <%= display_messages %>
     </div>

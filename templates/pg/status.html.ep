@@ -18,7 +18,7 @@
   checked
 <% } %>
    > Show idle connections<br />
-  <input type ="checkbox" name="show_idle_transaction" onclick="toggleSetting('idle_transaction')" 
+  <input type ="checkbox" name="show_idle_transaction" onclick="toggleSetting('idle_transaction')"
 <% if (session 'prm_idle_transaction') { %>
   checked
 <% } %>
