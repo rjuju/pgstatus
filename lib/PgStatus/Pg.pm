@@ -7,87 +7,97 @@ use Mojo::Base 'Mojolicious::Controller';
 use DBI;
 use Switch;
 
-sub welcome {
-  my $self = shift;
-  if (scalar($self->session('pg_version')) && ($self->session('pg_version') ne '')){
-    return $self->redirect_to('/pg_status');
-  }
-  $self->render();
+sub check_auth {
+    my $self = shift;
+
+    # Make the dispatch continue when the pg version is found in the session
+    if ( defined($self->session('pg_version')) ) {
+        return 1;
+    }
+
+    $self->redirect_to('pg_welcome');
+    return 0;
 }
 
+sub database {
+    my $self = shift;
+    my $datname = shift;
+    my $dbh;
+
+    $dbh = DBI->connect(conninfo( (defined $datname ? $datname : $self->session('pg_database') ),$self->session('pg_host'),$self->session('pg_port')), $self->session('pg_username'), $self->session('pg_password'));
+    if ( $dbh ) {
+        my $sql =$dbh->prepare(qq{select substr(version(),12,1) || substr(version(),14,1) AS v;});
+        $sql->execute();
+        my $version = $sql->fetchrow();
+        $sql->finish();
+        $self->session('pg_version' => $version);
+    } else {
+        $self->msg->error("Could not connect to database.");
+        $self->session('pg_version' => undef);
+    }
+
+    return $dbh;
+}
+
+sub welcome {
+    my $self = shift;
+    my $method = $self->req->method;
+    my $dbh;
+    my $version;
+    my $sql;
+
+    if ($method =~ m/^POST$/) {
+        #Try to connect
+        my $param = $self->req->params->to_hash;
+        my $error = 0;
+        my $msg = "";
+
+        #Connections settings
+        $self->session('pg_username' => $param->{username});
+        $self->session('pg_host' => $param->{host});
+        $self->session('pg_port' => $param->{port});
+        $self->session('pg_database' => $param->{database});
+        $self->session('pg_password' => $param->{password});
+        #$self->session('pg_version' => $version);
+        #Display settings
+        $self->session('prm_idle' => 1);
+        $self->session('prm_idle_transaction' => 1);
+        $self->session('prm_active' => 1);
+        $self->session('prm_waiting' => 1);
+
+        $dbh = database($self);
+
+        if (! $dbh){
+            return $self->redirect_to('/');
+        } else{
+            $dbh->disconnect();
+            return $self->redirect_to('/pg_status');
+        }
+    }
+    return $self->redirect_to('pg_status') if ( defined($self->session('pg_version')) );
+    return $self->render();
+}
+
+# main page
 sub status {
-  my $self = shift;
-  my $method = $self->req->method;
-  my $dbh;
-  my $version;
-  my $sql;
+    my $self = shift;
+    my $dbh;
+    my $version;
+    my $sql;
 
-  if ($method =~ m/^POST$/) {
-    #Try to connect
-    my $param = $self->req->params->to_hash;
-    my $error = 0;
-    my $msg = "";
-
-    if ($param->{username} =~ m/^\s*$/){
-      $error = 1;
-      $msg .= "Empty username\n";
-    }
-    if ($param->{host} =~ m/^\s*$/){
-      $error = 1;
-      $msg .= "Empty host\n";
-    }
-    if ($param->{port} =~ m/^\s*$/){
-      $error = 1;
-      $msg .= "Empty port\n";
-    }
-    if ($param->{password} =~ m/^\s*$/){
-      $error = 1;
-      $msg .= "Empty password\n";
-    }
-
-    if ($error){
-      #$self->stash(err => $err);
-      #return $self->redirect_to('/');
-    }
-
-    $dbh = DBI->connect(conninfo($param->{database},$param->{host},$param->{port}), $param->{username}, $param->{password});
-    if (! $dbh){
-	    $self->msg->error("Could not connect to database.");
-      return $self->redirect_to('/');
-    }
-    $sql =$dbh->prepare(qq{select substr(version(),12,1) || substr(version(),14,1) AS v;});
-    $sql->execute();
-    $version = $sql->fetchrow();
-    $sql->finish();
-    $dbh->disconnect();
-
-    #Connections settings
-    $self->session('pg_username' => $param->{username});
-    $self->session('pg_host' => $param->{host});
-    $self->session('pg_port' => $param->{port});
-    $self->session('pg_database' => $param->{database});
-    $self->session('pg_password' => $param->{password});
-    $self->session('pg_version' => $version);
-    #Display settings
-    $self->session('prm_idle' => 1);
-    $self->session('prm_idle_transaction' => 1);
-    $self->session('prm_active' => 1);
-    $self->session('prm_waiting' => 1);
-
-  } else{
-    #Connection already ok, get by session
+#Connection already ok, get by session
     $version = $self->session('pg_version');
-  }
-  $self->render();
+
+    return $self->render();
 }
 
 sub activity {
     my $self = shift;
     my $version = $self->session('pg_version');
     my $sql;
-    my $dbh = DBI->connect(conninfo($self->session('pg_database'),$self->session('pg_host'),$self->session('pg_port')), $self->session('pg_username'), $self->session('pg_password'));
+    my $dbh = database($self);
     if (! $dbh){
-	    $self->msg->error("Could not connect to database.");
+        $self->msg->error("Could not connect to database.");
       return $self->redirect_to('/');
     }
   my $queries = [ ];
@@ -116,7 +126,7 @@ sub activity {
       case "idle in transaction" { $add = 1 if ($self->session('prm_idle_transaction')); }
       case "active" { $add = 1 if ($self->session('prm_active')); }
       else { $add = 1; }
-	  }
+      }
     $add = 1 if (($self->session('prm_waiting')) && ($w eq "true"));
     if ($add){
       push @{$queries}, { pid => $p, datname => $d, usename => $u, state => $s, query => $q, waiting => $w};
@@ -138,7 +148,7 @@ sub count {
   my $count_active = 0;
   my $count_waiting = 0;
   my $count_other = 0;
-  my $dbh = DBI->connect(conninfo($self->session('pg_database'),$self->session('pg_host'),$self->session('pg_port')), $self->session('pg_username'), $self->session('pg_password'));
+  my $dbh = database($self);
   if (! $dbh){
    $self->msg->error("Could not connect to database.");
     return $self->redirect_to('/');
@@ -238,7 +248,7 @@ sub backend {
   my $self = shift;
   my $pid = $self->param('pid');
   my $do = $self->param('do');
-  my $dbh = DBI->connect(conninfo($self->session('pg_database'),$self->session('pg_host'),$self->session('pg_port')), $self->session('pg_username'), $self->session('pg_password'));
+  my $dbh = database($self);
   if (! $dbh){
    $self->msg->error("Could not connect to database.");
     return;

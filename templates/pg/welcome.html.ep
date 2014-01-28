@@ -23,7 +23,7 @@
       </ul>
       </div>
 
-    <%= form_for pg_status => (method => 'POST') => begin %>
+    <%= form_for pg_welcome => (method => 'POST') => begin %>
     <fieldset>
       <legend>Login</legend>
       <%= text_field 'username', type => 'text', class => 'input-block-level', id => 'username', placeholder => 'username' %>
