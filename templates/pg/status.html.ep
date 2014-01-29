@@ -12,27 +12,38 @@
 </div></div>
 
 <div id="settings" class="well"><b>Settings<button class="close" onclick="displaySettings()">&times;</button></b><br />
-  <input type ="checkbox" name="toggle_refresh" onclick="toggleRefresh()"> Auto refresh<br />
-  <input type ="checkbox" name="show_idle" onclick="toggleSetting('idle')"
-<% if (session 'prm_idle') { %>
-  checked
-<% } %>
-   > Show idle connections<br />
-  <input type ="checkbox" name="show_idle_transaction" onclick="toggleSetting('idle_transaction')"
-<% if (session 'prm_idle_transaction') { %>
-  checked
-<% } %>
-  > Show idle in transaction connections<br />
-  <input type ="checkbox" name="show_active" onclick="toggleSetting('active')"
-<% if (session 'prm_active') { %>
-  checked
-<% } %>
-  > Show active connections<br />
-  <input type ="checkbox" name="show_waiting" onclick="toggleSetting('waiting')"
-<% if (session 'prm_waiting') { %>
-  checked
-<% } %>
-  > Show blocked connections<br />
+  <label class="checkbox">
+    <%= check_box toggle_refresh => (onclick => "toggleRefresh()") %>
+    Auto refresh
+  </label>
+  % my %option;
+  <label class="checkbox">
+    % %option = ();
+    % $option{checked} = 'true' if session('prm_idle');
+    <%= check_box show_idle => (%option, onclick => "toggleSetting('idle')") %>
+    Show idle connections
+  </label>
+
+  <label class="checkbox">
+    % %option = ();
+    % $option{checked} = 'true' if session('prm_idle_transaction');
+    <%= check_box show_idle_transaction => (%option, onclick => "toggleSetting('idle_transaction')") %>
+    Show idle in transaction connections
+  </label>
+
+  <label class="checkbox">
+    % %option = ();
+    % $option{checked} = 'true' if session('prm_active');
+    <%= check_box show_active => (%option, onclick => "toggleSetting('active')") %>
+    Show active connections
+  </label>
+
+  <label class="checkbox">
+    % %option = ();
+    % $option{checked} = 'true' if session('prm_waiting');
+    <%= check_box show_waiting => (%option, onclick => "toggleSetting('waiting')") %>
+    Show blocked connections
+  </label>
 </div>
 
 <div class="well">
