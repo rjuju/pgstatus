@@ -12,7 +12,7 @@
     <script type="text/javascript" src="<%= url_for '/' %>js/flotr2.min.js"></script>
     <script type="text/javascript" src="<%= url_for '/' %>js/jquery.tablesorter.min.js"></script>
     <script type="text/javascript" src="<%= url_for '/' %>js/jquery.tablesorter.pager.js"></script>
-    <script type="text/javascript" src="<%= url_for '/' %>js/pg_status.js"></script>
+    <%= content_for 'header' %>
   </head>
   <body style="padding-top: 60px;">
 

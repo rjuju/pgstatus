@@ -1,6 +1,8 @@
 % layout 'default';
 % title 'State of server';
-
+% content_for header => begin
+<script type="text/javascript" src='<%= url_for '/' %>js/pg_status.js'></script>
+% end
 <div class="navbar navbar-fixed-top navbar-inverse">
   <div class="navbar-inner">
   <ul class="nav">
