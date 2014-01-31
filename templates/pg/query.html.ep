@@ -4,7 +4,7 @@
 <div class="well well-small">
   <b>Query :</b> <span class="badge badge-warning clickable" alt="Cancel backend" onClick="cancelBackend(<%= param 'pid' %>)">X</span>
   <% if ((session 'pg_version') > 83){ %>
-	<span class="badge badge-important clickable" alt="Terminate backend" onClick="terminateBackend(<%= param 'pid' %>)">X</span>
+    <span class="badge badge-important clickable" alt="Terminate backend" onClick="terminateBackend(<%= param 'pid' %>)">X</span>
   <% } %>
   <br />
   <%= stash 'query' %>
@@ -12,35 +12,35 @@
 <% if (scalar(@lines)) { %>
 <table class="table table-hover table-striped table-condensed">
   <tr>
-	<th>relation</th>
-	<th>database</th>
-	<th>lock type</th>
-	<th>mode</th>
-	<th>granted</th>
-	<th>blocking pid</th>
-	<th>blocking query</th>
+    <th>relation</th>
+    <th>database</th>
+    <th>lock type</th>
+    <th>mode</th>
+    <th>granted</th>
+    <th>blocking pid</th>
+    <th>blocking query</th>
   </tr>
   <% foreach my $q (@lines) { %>
   <%     my %line = %{$q}; %>
     <tr>
-	<td><%= $line{relname} %></td>
-	<td><%= $line{datname} %></td>
-	<td><%= $line{locktype} %></td>
-	<td><%= $line{mode} %></td>
-	<td>
-	  <% if ( (!scalar $line{granted}) || ($line{granted} eq "false")) { %>
-		<font color="red">
-	  <% } %>
-	  <%= $line{granted} %></td>
-	  <% if ( (!scalar $line{granted}) || ($line{granted} eq "false")) { %>
-		</font>
-	  <% } %>
-	<td class="clickable" onclick="addQuery('<%= $line{datname} %>',<%= $line{blocking_pid} %>)">
-		<%= $line{blocking_pid} %>
-	</td>
-	<td class="clickable" onclick="addQuery('<%= $line{datname} %>',<%= $line{blocking_pid} %>)">
-		<%= $line{blocking_query} %>
-	</td>
+    <td><%= $line{relname} %></td>
+    <td><%= $line{datname} %></td>
+    <td><%= $line{locktype} %></td>
+    <td><%= $line{mode} %></td>
+    <td>
+      <% if ( (!scalar $line{granted}) || ($line{granted} eq "false")) { %>
+        <font color="red">
+      <% } %>
+      <%= $line{granted} %></td>
+      <% if ( (!scalar $line{granted}) || ($line{granted} eq "false")) { %>
+        </font>
+      <% } %>
+    <td class="clickable" onclick="addQuery('<%= $line{datname} %>',<%= $line{blocking_pid} %>)">
+        <%= $line{blocking_pid} %>
+    </td>
+    <td class="clickable" onclick="addQuery('<%= $line{datname} %>',<%= $line{blocking_pid} %>)">
+        <%= $line{blocking_query} %>
+    </td>
   </tr>
   <% } %>
 </table>
