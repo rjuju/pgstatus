@@ -202,10 +202,10 @@ sub query {
   my $field_pid = (($self->session('pg_version') > 91)?"pid":"procpid");
   my $field_query = (($self->session('pg_version') > 91)?"query":"current_query");
 
-  my $dbh = DBI->connect(conninfo($dbname,$self->session('pg_host'),$self->session('pg_port')), $self->session('pg_username'), $self->session('pg_password'));
+  my $dbh = database($self,$dbname);
   if (! $dbh){
     #Could not connect to specific database
-    $dbh = DBI->connect(conninfo($self->session('pg_database'),$self->session('pg_host'),$self->session('pg_port')), $self->session('pg_username'), $self->session('pg_password'));
+    $dbh = database($self);
   }
   my $tmp = "SELECT $field_query as query FROM pg_stat_activity WHERE $field_pid = $pid";
   my $sql = $dbh->prepare($tmp);
@@ -216,7 +216,7 @@ sub query {
   $tmp = qq{SELECT quote_ident(n.nspname) || '.' || quote_ident(c.relname) as relname,
     quote_ident(psa.datname) as datname,l.locktype, l.page,l.tuple,l.mode,l.granted::text,l2.pid as blocking_pid,psa2.}
     .(($self->session('pg_version') > 91)?"query":"current_query")." AS blocking_query\n"
-    ." FROM pg_stat_activity psa\n"
+    ." FROM pg_stat_activity psa"
     ." LEFT JOIN pg_locks l ON l.pid = psa.$field_pid"
     .qq{ LEFT JOIN pg_locks l2 ON (l.database,l.relation) = (l2.database,l2.relation)
             AND l2.granted AND NOT l.granted
@@ -240,7 +240,7 @@ sub query {
 sub toggle {
   my $self = shift;
   my $name = $self->param('name');
-  $self->session('prm_'.$name => _not($self->session('prm_'.$name)));
+  $self->session('prm_'.$name => ! $self->session('prm_'.$name));
   $self->render();
 }
 
@@ -287,12 +287,6 @@ sub conninfo {
   $ret .="host=$host;" if ($host ne "");
   $ret .="port=$port;" if ($port ne "");
   return $ret;
-}
-
-sub _not {
-  my ($val) = @_;
-  return 1 if ($val == 0);
-  return 0;
 }
 
 1;
