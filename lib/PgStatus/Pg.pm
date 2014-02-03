@@ -6,6 +6,7 @@ package PgStatus::Pg;
 use Mojo::Base 'Mojolicious::Controller';
 use DBI;
 use Switch;
+use Data::Dumper;
 
 sub check_auth {
     my $self = shift;
@@ -24,7 +25,8 @@ sub database {
     my $datname = shift;
     my $dbh;
 
-    $dbh = DBI->connect(conninfo( (defined $datname ? $datname : $self->session('pg_database') ),$self->session('pg_host'),$self->session('pg_port')), $self->session('pg_username'), $self->session('pg_password'));
+    my $conninfo =conninfo( (defined $datname ? $datname : $self->session('pg_database') ),$self->session('pg_host'),$self->session('pg_port'));
+    $dbh = DBI->connect( $conninfo, $self->session('pg_username'), $self->session('pg_password'));
     if ( $dbh ) {
         my $sql =$dbh->prepare(qq{select substr(version(),12,1) || substr(version(),14,1) AS v;});
         $sql->execute();
@@ -112,24 +114,24 @@ sub activity {
         WHEN '<IDLE>' THEN 'idle'
         WHEN '<IDLE> in transaction' THEN 'idle in transaction'
         ELSE 'active'
-      END as state,current_query AS query,waiting::text
+      END as state,current_query AS query,waiting::text as waiting
       FROM pg_stat_activity
       WHERE procpid <> pg_backend_pid();});
   }
   $sql->execute();
   my $add;
 
-  while (my ($p, $d, $u, $s, $q, $w) = $sql->fetchrow()) {
+  while ( my $row = $sql->fetchrow_hashref() ) {
     $add = 0;
-    switch ($s){
+    switch ($row->{status}){
       case "idle" { $add = 1 if ($self->session('prm_idle')); }
       case "idle in transaction" { $add = 1 if ($self->session('prm_idle_transaction')); }
       case "active" { $add = 1 if ($self->session('prm_active')); }
       else { $add = 1; }
       }
-    $add = 1 if (($self->session('prm_waiting')) && ($w eq "true"));
+    $add = 1 if (($self->session('prm_waiting')) && ($row->{waiting} eq "true"));
     if ($add){
-      push @{$queries}, { pid => $p, datname => $d, usename => $u, state => $s, query => $q, waiting => $w};
+      push @{$queries},  $row;
     }
   }
   $sql->finish();
@@ -196,45 +198,46 @@ sub count {
 }
 
 sub query {
-  my $self = shift;
-  my $dbname = $self->param('db');
-  my $pid = $self->param('pid');
-  my $field_pid = (($self->session('pg_version') > 91)?"pid":"procpid");
-  my $field_query = (($self->session('pg_version') > 91)?"query":"current_query");
+    my $self = shift;
+    my $dbname = $self->param('db');
+    my $pid = $self->param('pid');
+    my $field_pid = (($self->session('pg_version') > 91)?"pid":"procpid");
+    my $field_query = (($self->session('pg_version') > 91)?"query":"current_query");
 
-  my $dbh = database($self,$dbname);
-  if (! $dbh){
-    #Could not connect to specific database
-    $dbh = database($self);
-  }
-  my $tmp = "SELECT $field_query as query FROM pg_stat_activity WHERE $field_pid = $pid";
-  my $sql = $dbh->prepare($tmp);
-  $sql->execute();
-  my $query = $sql->fetchrow();
-  $self->stash(query => $query);
+    my $dbh = database($self,$dbname);
+    if (! $dbh){
+      #Could not connect to specific database
+      $dbh = database($self);
+    }
+    my $tmp = "SELECT $field_query as query FROM pg_stat_activity WHERE $field_pid = $pid";
+    my $sql = $dbh->prepare($tmp);
+    $sql->execute();
+    my $query = $sql->fetchrow();
+    $self->stash(query => $query);
 
-  $tmp = qq{SELECT quote_ident(n.nspname) || '.' || quote_ident(c.relname) as relname,
-    quote_ident(psa.datname) as datname,l.locktype, l.page,l.tuple,l.mode,l.granted::text,l2.pid as blocking_pid,psa2.}
-    .(($self->session('pg_version') > 91)?"query":"current_query")." AS blocking_query\n"
-    ." FROM pg_stat_activity psa"
-    ." LEFT JOIN pg_locks l ON l.pid = psa.$field_pid"
-    .qq{ LEFT JOIN pg_locks l2 ON (l.database,l.relation) = (l2.database,l2.relation)
-            AND l2.granted AND NOT l.granted
-    LEFT JOIN pg_stat_activity psa2 ON l2.pid = psa2.}.$field_pid
-    .qq{ LEFT JOIN pg_class c ON l.relation = c.oid
-    LEFT JOIN pg_namespace n ON c.relnamespace = n.oid
-    WHERE psa.}.$field_pid." = $pid;";
+    $tmp = qq{SELECT quote_ident(n.nspname) || '.' || quote_ident(c.relname) as relname,
+      quote_ident(psa.datname) as datname,l.locktype, l.page,l.tuple,l.mode,l.granted::text,l2.pid as blocking_pid,psa2.}
+      .(($self->session('pg_version') > 91)?"query":"current_query")." AS blocking_query\n"
+      ." FROM pg_stat_activity psa"
+      ." LEFT JOIN pg_locks l ON l.pid = psa.$field_pid"
+      .qq{ LEFT JOIN pg_locks l2 ON (l.database,l.relation) = (l2.database,l2.relation)
+              AND l2.granted AND NOT l.granted
+      LEFT JOIN pg_stat_activity psa2 ON l2.pid = psa2.}.$field_pid
+      .qq{ LEFT JOIN pg_class c ON l.relation = c.oid
+      LEFT JOIN pg_namespace n ON c.relnamespace = n.oid
+      WHERE psa.}.$field_pid." = $pid;";
 
-  $sql = $dbh->prepare($tmp);
-  my $lines = [ ];
-  $sql->execute();
-  while (my ($r, $d, $l, $p, $t, $m, $g, $b, $q) = $sql->fetchrow()) {
-    push @{$lines}, { relname => $r, datname => $d, locktype => $l, page => $p, tuple => $t, mode => $m, granted => $g, blocking_pid => $b, blocking_query => $q};
-  }
-  $sql->finish();
-  $self->stash(lines => $lines);
-  $dbh->disconnect();
-  $self->render();
+    $sql = $dbh->prepare($tmp);
+    my $lines = [ ];
+    $sql->execute();
+
+    my $row;
+    push @{$lines}, $row while $row = $sql->fetchrow_hashref();
+
+    $sql->finish();
+    $self->stash(lines => $lines);
+    $dbh->disconnect();
+    $self->render();
 }
 
 sub toggle {
